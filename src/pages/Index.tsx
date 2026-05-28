@@ -1,45 +1,59 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Icon from "@/components/ui/icon";
 
-const HERO_IMG = "https://cdn.poehali.dev/projects/a906e03f-2a0c-4654-b49f-8a3e04b6ccf3/files/1d0341e9-b177-486a-a9e6-85dab7a7e920.jpg";
+const PANEL_IMG = "https://cdn.poehali.dev/projects/a906e03f-2a0c-4654-b49f-8a3e04b6ccf3/files/df2d544a-8a9d-4f60-b9b7-dda3495f5a5a.jpg";
+
+// Slot options and their prices
+const slotOptions = [10, 16, 20, 24, 32, 48, 64];
+
+const getPrice = (slots: number, tier: "start" | "pro" | "elite") => {
+  const base = { start: 6.9, pro: 9.5, elite: 13.0 };
+  return Math.round(slots * base[tier]);
+};
+
+const features = [
+  { icon: "Cpu", title: "Мощное железо", desc: "Intel Xeon E5/E7, DDR4 ECC, NVMe SSD RAID10. Никаких компромиссов." },
+  { icon: "Globe", title: "3 дата-центра", desc: "Москва, Санкт-Петербург, Франкфурт. Выбирайте ближайший к игрокам." },
+  { icon: "Shield", title: "DDoS-защита", desc: "Фильтрация атак до 2 Тбит/с. Сервер работает даже под атакой." },
+  { icon: "Zap", title: "Пинг < 5 мс", desc: "Оптимизированные маршруты. Честная игра без задержек." },
+  { icon: "RotateCcw", title: "Бэкапы", desc: "Автоматические резервные копии каждые 24 часа. Откат в 1 клик." },
+  { icon: "Headphones", title: "Поддержка 24/7", desc: "Живые операторы. Среднее время ответа — 4 минуты." },
+];
 
 const plans = [
   {
-    name: "STARTER",
-    slots: "16 слотов",
-    price: "149",
-    period: "/ мес",
-    features: ["CS2 / CS:GO", "NVMe SSD", "10 Гбит/с канал", "Базовая защита DDoS", "Панель управления", "Резервные копии 3 дня"],
-    popular: false,
+    id: "start",
+    name: "СТАРТ",
     tag: null,
+    color: "var(--ma-muted2)",
+    perSlot: 6.9,
+    features: ["CS2 / CS:GO", "NVMe SSD", "Базовая DDoS-защита", "Панель управления", "Бэкап 3 дня", "Тикет-поддержка"],
+    notIncluded: ["Приоритетный саппорт", "Кастомные плагины"],
   },
   {
-    name: "PRO",
-    slots: "32 слота",
-    price: "299",
-    period: "/ мес",
-    features: ["CS2 / CS:GO", "NVMe SSD", "10 Гбит/с канал", "Защита DDoS до 1 Тбит/с", "Панель управления", "Резервные копии 7 дней", "Приоритетная поддержка"],
-    popular: true,
-    tag: "ХИТПИК",
+    id: "pro",
+    name: "ПРО",
+    tag: "Популярный",
+    color: "var(--ma-blue-light)",
+    perSlot: 9.5,
+    features: ["CS2 / CS:GO", "Dedicated NVMe", "DDoS до 1 Тбит/с", "Панель управления", "Бэкап 7 дней", "Приоритетный саппорт"],
+    notIncluded: ["Кастомные плагины"],
   },
   {
-    name: "ELITE",
-    slots: "64 слота",
-    price: "599",
-    period: "/ мес",
-    features: ["CS2 / CS:GO", "Dedicated NVMe", "10 Гбит/с канал", "Защита DDoS до 2 Тбит/с", "Панель управления", "Резервные копии 30 дней", "VIP поддержка 24/7", "Кастомные плагины"],
-    popular: false,
+    id: "elite",
+    name: "ЭЛИТ",
     tag: null,
+    color: "var(--ma-accent)",
+    perSlot: 13.0,
+    features: ["CS2 / CS:GO", "Dedicated NVMe", "DDoS до 2 Тбит/с", "Панель управления", "Бэкап 30 дней", "VIP-поддержка 24/7", "Кастомные плагины"],
+    notIncluded: [],
   },
-];
+] as const;
 
-const advantages = [
-  { icon: "Zap", title: "Пинг < 5 мс", desc: "Серверы в Москве, Санкт-Петербурге и Европе. Молниеносный отклик для честной игры." },
-  { icon: "Shield", title: "DDoS-защита", desc: "Автоматическая фильтрация атак до 2 Тбит/с. Ваш сервер всегда в строю." },
-  { icon: "Rocket", title: "Запуск за 60 сек", desc: "Создайте сервер за минуту. Установите плагины в один клик, без технических знаний." },
-  { icon: "Clock", title: "Аптайм 99.9%", desc: "Гарантированная доступность сервера. Компенсация за каждую минуту простоя." },
-  { icon: "Settings", title: "Полный контроль", desc: "Панель управления с доступом к конфигам, RCON, FTP и консоли в реальном времени." },
-  { icon: "Headphones", title: "Поддержка 24/7", desc: "Живые операторы, не боты. Среднее время ответа — 3 минуты в любое время суток." },
+const locations = [
+  { city: "Москва", dc: "Дата-центр 3data", ping: "< 2 мс", status: "online", flag: "🇷🇺" },
+  { city: "Санкт-Петербург", dc: "Дата-центр Миран", ping: "< 5 мс", status: "online", flag: "🇷🇺" },
+  { city: "Франкфурт", dc: "Hetzner DE", ping: "< 25 мс", status: "online", flag: "🇩🇪" },
 ];
 
 const reviews = [
@@ -47,310 +61,335 @@ const reviews = [
     name: "Артём К.",
     role: "Организатор CS2 лиги",
     rating: 5,
-    text: "Перешёл с другого хостинга — разница огромная. Пинг стал стабильным, ни одного лага за 3 месяца. Техподдержка отвечает быстрее, чем у провайдера дома.",
-    server: "32 слота / PRO",
+    text: "Перешёл сюда с другого хостинга — небо и земля. Пинг стабильный, ни одного реstart'а сервера за 4 месяца. Поддержка отвечает быстро и по делу.",
+    server: "32 слота · PRO",
+    date: "Март 2024",
   },
   {
     name: "Дмитрий В.",
-    role: "Капитан клана NaVI Fans",
+    role: "Капитан клана, 2000+ elo",
     rating: 5,
-    text: "Запустил сервер для тренировок команды за 2 минуты. Панель управления — огонь, настроил всё сам без единого запроса в саппорт. Рекомендую всем серьёзным игрокам.",
-    server: "16 слотов / STARTER",
+    text: "Настроил сервер без единого вопроса к саппорту — всё понятно в панели. Плагины ставятся за минуту. DDoS реально держит — пробовали сливать, не вышло.",
+    server: "16 слотов · СТАРТ",
+    date: "Февраль 2024",
   },
   {
     name: "Максим Л.",
-    role: "Стример Twitch",
+    role: "Twitch-стример / тренер",
     rating: 5,
-    text: "Стримлю с серверов FRAG HOST уже полгода. DDoS-защита реально работает — пытались положить сервер во время турнира, не вышло. Парни знают своё дело.",
-    server: "64 слота / ELITE",
+    text: "Держу сервер для тренировок уже полгода. Бэкапы спасли однажды когда случайно снёс конфиги. Рекомендую всем кто серьёзно относится к CS.",
+    server: "64 слота · ЭЛИТ",
+    date: "Январь 2024",
   },
 ];
 
-const stats = [
-  { value: "12 000+", label: "активных серверов" },
-  { value: "< 5 мс", label: "средний пинг" },
-  { value: "99.9%", label: "гарантия аптайма" },
-  { value: "3 мин", label: "среднее время ответа" },
+const navLinks = [
+  { label: "Тарифы", href: "#pricing" },
+  { label: "Преимущества", href: "#features" },
+  { label: "Локации", href: "#locations" },
+  { label: "Отзывы", href: "#reviews" },
 ];
 
 export default function Index() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [selectedSlots, setSelectedSlots] = useState(24);
 
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--cs-bg)" }}>
+    <div style={{ background: "var(--ma-bg)", minHeight: "100vh" }}>
+
+      {/* Top accent */}
+      <div className="top-accent" />
 
       {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4"
-        style={{ background: "rgba(10,12,14,0.88)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(255,106,0,0.1)" }}>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full" style={{ background: "var(--neon)", boxShadow: "0 0 8px var(--neon)" }} />
-          <span className="font-oswald text-xl font-bold tracking-widest" style={{ color: "var(--cs-text)" }}>
-            FRAG<span style={{ color: "var(--neon)" }}>HOST</span>
-          </span>
+      <nav style={{
+        background: "rgba(13,17,23,0.96)",
+        backdropFilter: "blur(10px)",
+        borderBottom: "1px solid var(--ma-border)",
+        position: "sticky", top: 0, zIndex: 50
+      }}>
+        <div className="container mx-auto px-4" style={{ maxWidth: 1200 }}>
+          <div className="flex items-center justify-between h-14">
+            {/* Logo */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: "var(--ma-blue)" }}>
+                <Icon name="Server" size={14} style={{ color: "#fff" }} />
+              </div>
+              <span style={{ fontWeight: 700, fontSize: "1rem", color: "var(--ma-text)", letterSpacing: "-0.01em" }}>
+                FRAG<span style={{ color: "var(--ma-blue-light)" }}>HOST</span>
+              </span>
+            </div>
+
+            {/* Links */}
+            <div className="hidden md:flex items-center gap-6">
+              {navLinks.map(l => (
+                <a key={l.label} href={l.href} className="ma-nav-link">{l.label}</a>
+              ))}
+            </div>
+
+            {/* CTA */}
+            <div className="flex items-center gap-3">
+              <a href="#" className="ma-nav-link hidden sm:block">Войти</a>
+              <button className="btn-ma">Создать сервер</button>
+            </div>
+          </div>
         </div>
-        <div className="hidden md:flex items-center gap-8">
-          <a href="#advantages" className="nav-link">Преимущества</a>
-          <a href="#pricing" className="nav-link">Тарифы</a>
-          <a href="#reviews" className="nav-link">Отзывы</a>
-        </div>
-        <button className="btn-neon px-5 py-2 text-sm cursor-pointer">
-          Начать
-        </button>
       </nav>
 
       {/* HERO */}
-      <section className="relative min-h-screen flex items-center overflow-hidden">
-        <div className="absolute inset-0">
-          <img src={HERO_IMG} alt="" className="w-full h-full object-cover" style={{ opacity: 0.22 }} />
-          <div className="absolute inset-0" style={{
-            background: "linear-gradient(135deg, rgba(10,12,14,0.96) 40%, rgba(255,106,0,0.04) 100%)"
-          }} />
-          <div className="absolute inset-0" style={{
-            background: "radial-gradient(ellipse at 70% 50%, rgba(255,106,0,0.07) 0%, transparent 60%)"
-          }} />
-        </div>
-
-        {/* Grid lines */}
-        <div className="absolute inset-0" style={{
-          backgroundImage: "linear-gradient(rgba(255,106,0,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,106,0,0.4) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-          opacity: 0.05
+      <section style={{ padding: "64px 0 48px", position: "relative", overflow: "hidden" }}>
+        {/* Subtle bg gradient */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "radial-gradient(ellipse at 60% 0%, rgba(26,111,232,0.08) 0%, transparent 60%)",
+          pointerEvents: "none"
         }} />
 
-        <div className="relative container mx-auto px-6 pt-28 pb-20">
-          <div className="max-w-3xl">
-            <div className="tag-cs inline-block mb-6" style={{ opacity: 0, animation: "fade-in-up 0.6s ease 0.1s forwards" }}>
-              ⚡ Профессиональный гейминг-хостинг
-            </div>
-            <h1 className="font-oswald font-bold leading-none mb-6" style={{
-              fontSize: "clamp(3rem, 8vw, 7rem)",
-              color: "var(--cs-text)",
-              textTransform: "uppercase",
-              letterSpacing: "-0.01em",
-              opacity: 0,
-              animation: "fade-in-up 0.7s ease 0.2s forwards"
-            }}>
-              <span className="glitch block" data-text="СЕРВЕРЫ">СЕРВЕРЫ</span>
-              <span className="block" style={{ color: "var(--neon)", textShadow: "0 0 40px rgba(255,106,0,0.5)" }}>
-                COUNTER&#8209;STRIKE
-              </span>
-              <span className="block" style={{ fontSize: "0.52em", color: "var(--cs-muted)", letterSpacing: "0.1em" }}>
-                ДЛЯ ПРОФЕССИОНАЛОВ
-              </span>
-            </h1>
-
-            <p className="font-rajdhani text-lg mb-10 max-w-xl" style={{
-              color: "var(--cs-muted)", lineHeight: 1.7,
-              opacity: 0, animation: "fade-in-up 0.7s ease 0.35s forwards"
-            }}>
-              Запусти CS2 сервер за 60 секунд. Пинг менее 5 мс, DDoS-защита военного класса,
-              панель управления без лишнего — только игра.
-            </p>
-
-            <div className="flex flex-wrap gap-4" style={{ opacity: 0, animation: "fade-in-up 0.7s ease 0.5s forwards" }}>
-              <button className="btn-neon px-8 py-4 text-base cursor-pointer">
-                Создать сервер
-              </button>
-              <button className="btn-neon-outline px-8 py-4 text-base cursor-pointer">
-                Смотреть тарифы
-              </button>
-            </div>
-
-            {/* Ping indicator */}
-            <div className="flex items-center gap-3 mt-10" style={{ opacity: 0, animation: "fade-in-up 0.7s ease 0.65s forwards" }}>
-              <div className="relative flex items-center justify-center w-3 h-3">
-                <div className="absolute w-3 h-3 rounded-full animate-ping-slow" style={{ background: "rgba(74,222,128,0.4)" }} />
-                <div className="w-2 h-2 rounded-full" style={{ background: "#4ADE80" }} />
+        <div className="container mx-auto px-4" style={{ maxWidth: 1200, position: "relative" }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Text */}
+            <div>
+              <div className="badge-blue inline-flex items-center gap-1.5 mb-5 fade-in d1">
+                <span className="dot-online" style={{ width: 6, height: 6 }} />
+                Серверы онлайн · 12 431 активных
               </div>
-              <span className="font-mono-cs text-xs" style={{ color: "var(--cs-muted)" }}>
-                MSK — <span style={{ color: "#4ADE80" }}>3 мс</span>&nbsp;&nbsp;
-                SPB — <span style={{ color: "#4ADE80" }}>5 мс</span>&nbsp;&nbsp;
-                EU — <span style={{ color: "#FBBF24" }}>22 мс</span>
-              </span>
-            </div>
-          </div>
-        </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-32" style={{
-          background: "linear-gradient(to bottom, transparent, var(--cs-bg))"
-        }} />
-      </section>
+              <h1 className="fade-in d2" style={{
+                fontSize: "clamp(2rem, 4vw, 3rem)",
+                fontWeight: 800,
+                color: "var(--ma-text)",
+                lineHeight: 1.2,
+                marginBottom: 16,
+                letterSpacing: "-0.02em"
+              }}>
+                Хостинг серверов<br />
+                <span style={{ color: "var(--ma-blue-light)" }}>Counter-Strike 2</span>
+              </h1>
 
-      {/* STATS */}
-      <section className="relative py-16" style={{ background: "var(--cs-surface)" }}>
-        <div className="section-divider absolute top-0 left-0 right-0" />
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((s, i) => (
-              <div key={i} className="text-center">
-                <div className="font-oswald font-bold mb-1" style={{ fontSize: "clamp(1.8rem, 4vw, 3rem)", color: "var(--neon)" }}>
-                  {s.value}
-                </div>
-                <div className="font-rajdhani text-sm uppercase tracking-wider" style={{ color: "var(--cs-muted)" }}>
-                  {s.label}
-                </div>
+              <p className="fade-in d3" style={{
+                fontSize: "1rem", color: "var(--ma-muted2)", lineHeight: 1.7,
+                marginBottom: 28, maxWidth: 480
+              }}>
+                Запустите сервер CS2 или CS:GO за 60 секунд. Мощное железо,
+                низкий пинг, надёжная DDoS-защита и удобная панель управления.
+              </p>
+
+              <div className="flex flex-wrap gap-3 fade-in d4" style={{ marginBottom: 36 }}>
+                <button className="btn-ma" style={{ padding: "12px 28px", fontSize: "0.95rem" }}>
+                  Попробовать бесплатно
+                </button>
+                <button className="btn-ma-outline">
+                  Смотреть тарифы
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
-        <div className="section-divider absolute bottom-0 left-0 right-0" />
-      </section>
 
-      {/* ADVANTAGES */}
-      <section id="advantages" className="py-24 relative">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="tag-cs inline-block mb-4">Почему мы</div>
-            <h2 className="font-oswald font-bold uppercase" style={{
-              fontSize: "clamp(2rem, 5vw, 3.5rem)",
-              color: "var(--cs-text)",
-              letterSpacing: "0.02em"
-            }}>
-              НАШИ <span style={{ color: "var(--neon)" }}>ПРЕИМУЩЕСТВА</span>
-            </h2>
-          </div>
+              {/* Quick stats row */}
+              <div className="flex flex-wrap gap-6 fade-in d5">
+                {[
+                  { label: "Пинг МСК", value: "< 2 мс", ok: true },
+                  { label: "Аптайм", value: "99.9%", ok: true },
+                  { label: "Запуск", value: "60 сек", ok: true },
+                  { label: "Поддержка", value: "24/7", ok: true },
+                ].map(s => (
+                  <div key={s.label} className="flex items-center gap-2">
+                    <Icon name="CheckCircle" size={14} style={{ color: "var(--ma-green)", flexShrink: 0 }} />
+                    <span style={{ fontSize: "0.82rem", color: "var(--ma-muted2)" }}>
+                      {s.label}: <strong style={{ color: "var(--ma-text)" }}>{s.value}</strong>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {advantages.map((a, i) => (
-              <div key={i} className="card-cs corner-bracket p-7 cursor-default">
-                <div className="w-12 h-12 flex items-center justify-center mb-5 rounded" style={{
-                  background: "var(--neon-dim)",
-                  border: "1px solid rgba(255,106,0,0.25)"
+            {/* Panel screenshot */}
+            <div className="fade-in d3 hidden lg:block" style={{ position: "relative" }}>
+              <div style={{
+                borderRadius: 12,
+                overflow: "hidden",
+                border: "1px solid var(--ma-border)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(26,111,232,0.1)"
+              }}>
+                {/* fake browser bar */}
+                <div style={{
+                  background: "var(--ma-surface2)",
+                  borderBottom: "1px solid var(--ma-border)",
+                  padding: "10px 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6
                 }}>
-                  <Icon name={a.icon} fallback="CircleAlert" size={22} style={{ color: "var(--neon)" }} />
+                  {["#FF5F56","#FFBD2E","#27C93F"].map(c => (
+                    <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />
+                  ))}
+                  <div style={{
+                    flex: 1, marginLeft: 8, background: "var(--ma-surface)",
+                    borderRadius: 4, padding: "3px 10px",
+                    fontSize: "0.72rem", color: "var(--ma-muted)"
+                  }}>
+                    panel.fraghost.ru
+                  </div>
                 </div>
-                <h3 className="font-oswald font-semibold text-xl uppercase mb-3 tracking-wide" style={{ color: "var(--cs-text)" }}>
-                  {a.title}
-                </h3>
-                <p className="font-rajdhani text-base leading-relaxed" style={{ color: "var(--cs-muted)" }}>
-                  {a.desc}
-                </p>
+                <img src={PANEL_IMG} alt="Панель управления" style={{ width: "100%", display: "block" }} />
+              </div>
+              {/* Glow */}
+              <div style={{
+                position: "absolute", bottom: -20, left: "50%", transform: "translateX(-50%)",
+                width: "70%", height: 60,
+                background: "rgba(26,111,232,0.15)",
+                filter: "blur(30px)", borderRadius: "50%",
+                pointerEvents: "none"
+              }} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURES */}
+      <section id="features" className="ma-section" style={{ borderTop: "1px solid var(--ma-border)" }}>
+        <div className="container mx-auto px-4" style={{ maxWidth: 1200 }}>
+          <div style={{ marginBottom: 40 }}>
+            <h2 style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--ma-text)", marginBottom: 8 }}>
+              Почему выбирают нас
+            </h2>
+            <p style={{ color: "var(--ma-muted2)", fontSize: "0.9rem" }}>
+              Всё необходимое для стабильной игры и удобного управления сервером
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {features.map((f, i) => (
+              <div key={i} className="ma-card" style={{ padding: 20, display: "flex", gap: 14, alignItems: "flex-start" }}>
+                <div className="feature-icon">
+                  <Icon name={f.icon} fallback="CircleAlert" size={18} style={{ color: "var(--ma-blue-light)" }} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: "0.92rem", color: "var(--ma-text)", marginBottom: 4 }}>
+                    {f.title}
+                  </div>
+                  <div style={{ fontSize: "0.82rem", color: "var(--ma-muted2)", lineHeight: 1.6 }}>
+                    {f.desc}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
-
-      <div className="section-divider mx-6" />
 
       {/* PRICING */}
-      <section id="pricing" className="py-24 relative">
-        <div className="absolute inset-0" style={{
-          background: "radial-gradient(ellipse at 50% 0%, rgba(255,106,0,0.07) 0%, transparent 55%)"
-        }} />
-        <div className="container mx-auto px-6 relative">
-          <div className="text-center mb-16">
-            <div className="tag-cs inline-block mb-4">Выбери план</div>
-            <h2 className="font-oswald font-bold uppercase" style={{
-              fontSize: "clamp(2rem, 5vw, 3.5rem)",
-              color: "var(--cs-text)",
-              letterSpacing: "0.02em"
-            }}>
-              ТАРИФНЫЕ <span style={{ color: "var(--neon)" }}>ПЛАНЫ</span>
+      <section id="pricing" className="ma-section" style={{ borderTop: "1px solid var(--ma-border)" }}>
+        <div className="container mx-auto px-4" style={{ maxWidth: 1200 }}>
+          <div style={{ marginBottom: 40 }}>
+            <h2 style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--ma-text)", marginBottom: 8 }}>
+              Тарифы
             </h2>
-            <p className="font-rajdhani text-base mt-3" style={{ color: "var(--cs-muted)" }}>
-              Без скрытых платежей. Первый месяц — возврат гарантирован.
+            <p style={{ color: "var(--ma-muted2)", fontSize: "0.9rem" }}>
+              Выберите количество слотов — цена пересчитается автоматически
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {plans.map((plan, i) => (
-              <div key={i} className={`card-cs relative p-8 flex flex-col ${plan.popular ? 'popular-glow' : ''}`}
-                style={plan.popular ? { background: "var(--cs-surface2)" } : {}}>
+          {/* Slot selector */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 32 }}>
+            <span style={{ fontSize: "0.82rem", color: "var(--ma-muted2)", alignSelf: "center", marginRight: 4 }}>
+              Количество слотов:
+            </span>
+            {slotOptions.map(s => (
+              <button
+                key={s}
+                className={`slot-btn ${selectedSlots === s ? "active" : ""}`}
+                onClick={() => setSelectedSlots(s)}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
 
+          {/* Pricing cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {plans.map((plan) => (
+              <div key={plan.id} className={`price-card ${plan.tag ? "featured" : ""} flex flex-col`} style={{ padding: 24 }}>
                 {plan.tag && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span style={{
-                      fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: "0.65rem",
-                      padding: "2px 12px",
-                      background: "var(--neon)",
-                      color: "#000",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.12em",
-                      fontWeight: 600
-                    }}>
-                      {plan.tag}
-                    </span>
+                  <div style={{ marginBottom: 12 }}>
+                    <span className="badge-popular">{plan.tag}</span>
                   </div>
                 )}
 
-                <div className="mb-6">
-                  <div className="font-mono-cs text-xs mb-2" style={{ color: "var(--cs-muted)" }}>
-                    {plan.slots}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 600, color: "var(--ma-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                    Тариф
                   </div>
-                  <div className="font-oswald font-bold text-2xl uppercase tracking-widest mb-1"
-                    style={{ color: plan.popular ? "var(--neon)" : "var(--cs-text)" }}>
+                  <div style={{ fontWeight: 700, fontSize: "1.3rem", color: plan.color, marginBottom: 12 }}>
                     {plan.name}
                   </div>
-                  <div className="flex items-end gap-1">
-                    <span className="font-oswald font-bold" style={{ fontSize: "3rem", color: "var(--cs-text)", lineHeight: 1 }}>
-                      {plan.price}₽
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <span style={{ fontSize: "2.4rem", fontWeight: 800, color: "var(--ma-text)", lineHeight: 1 }}>
+                      {getPrice(selectedSlots, plan.id as "start" | "pro" | "elite")}₽
                     </span>
-                    <span className="font-rajdhani mb-2" style={{ color: "var(--cs-muted)" }}>
-                      {plan.period}
-                    </span>
+                    <span style={{ fontSize: "0.8rem", color: "var(--ma-muted2)" }}>/ мес</span>
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: "var(--ma-muted)", marginTop: 4 }}>
+                    {selectedSlots} слотов · {plan.perSlot}₽ за слот
                   </div>
                 </div>
 
-                <ul className="space-y-3 mb-8 flex-1">
-                  {plan.features.map((f, j) => (
-                    <li key={j} className="flex items-center gap-3">
-                      <Icon name="Check" size={14} style={{ color: "var(--neon)", flexShrink: 0 }} />
-                      <span className="font-rajdhani text-base" style={{ color: "var(--cs-text)" }}>
-                        {f}
-                      </span>
+                <div className="ma-divider" style={{ marginBottom: 18 }} />
+
+                <ul style={{ flex: 1, marginBottom: 20 }}>
+                  {plan.features.map((f, i) => (
+                    <li key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
+                      <Icon name="Check" size={13} style={{ color: "var(--ma-green)", flexShrink: 0 }} />
+                      <span style={{ fontSize: "0.85rem", color: "var(--ma-text)" }}>{f}</span>
+                    </li>
+                  ))}
+                  {plan.notIncluded.map((f, i) => (
+                    <li key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
+                      <Icon name="X" size={13} style={{ color: "var(--ma-muted)", flexShrink: 0 }} />
+                      <span style={{ fontSize: "0.85rem", color: "var(--ma-muted)" }}>{f}</span>
                     </li>
                   ))}
                 </ul>
 
-                <button className={plan.popular ? "btn-neon px-6 py-3 w-full cursor-pointer" : "btn-neon-outline px-6 py-3 w-full cursor-pointer"}>
+                <button className={plan.tag ? "btn-ma" : "btn-ma-outline"} style={{ width: "100%", padding: "11px", fontSize: "0.875rem" }}>
                   Выбрать {plan.name}
                 </button>
               </div>
             ))}
           </div>
+
+          {/* Small note */}
+          <p style={{ marginTop: 16, fontSize: "0.78rem", color: "var(--ma-muted)" }}>
+            * Первые 3 дня бесплатно. Без автопродления. Кредитная карта не нужна.
+          </p>
         </div>
       </section>
 
-      <div className="section-divider mx-6" />
-
-      {/* REVIEWS */}
-      <section id="reviews" className="py-24 relative" style={{ background: "var(--cs-surface)" }}>
-        <div className="section-divider absolute top-0 left-0 right-0" />
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="tag-cs inline-block mb-4">Игроки говорят</div>
-            <h2 className="font-oswald font-bold uppercase" style={{
-              fontSize: "clamp(2rem, 5vw, 3.5rem)",
-              color: "var(--cs-text)",
-              letterSpacing: "0.02em"
-            }}>
-              ОТЗЫВЫ <span style={{ color: "var(--neon)" }}>КЛИЕНТОВ</span>
+      {/* LOCATIONS */}
+      <section id="locations" className="ma-section" style={{ borderTop: "1px solid var(--ma-border)" }}>
+        <div className="container mx-auto px-4" style={{ maxWidth: 1200 }}>
+          <div style={{ marginBottom: 32 }}>
+            <h2 style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--ma-text)", marginBottom: 8 }}>
+              Локации
             </h2>
+            <p style={{ color: "var(--ma-muted2)", fontSize: "0.9rem" }}>
+              Выбирайте дата-центр ближайший к вашим игрокам
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {reviews.map((r, i) => (
-              <div key={i} className="card-cs corner-bracket p-7 flex flex-col gap-5">
-                <div className="flex gap-1">
-                  {Array.from({ length: r.rating }).map((_, j) => (
-                    <span key={j} className="star-filled text-lg">★</span>
-                  ))}
-                </div>
-                <p className="font-rajdhani text-base leading-relaxed flex-1" style={{ color: "var(--cs-muted)" }}>
-                  "{r.text}"
-                </p>
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                  <div>
-                    <div className="font-oswald font-semibold uppercase tracking-wide" style={{ color: "var(--cs-text)" }}>
-                      {r.name}
-                    </div>
-                    <div className="font-rajdhani text-sm" style={{ color: "var(--cs-muted)" }}>
-                      {r.role}
-                    </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {locations.map((loc, i) => (
+              <div key={i} className="ma-card" style={{ padding: "18px 20px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: "1.2rem" }}>{loc.flag}</span>
+                    <span style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--ma-text)" }}>{loc.city}</span>
                   </div>
-                  <div className="tag-cs text-xs">{r.server}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <div className="dot-online" />
+                    <span style={{ fontSize: "0.72rem", color: "var(--ma-green)" }}>Онлайн</span>
+                  </div>
+                </div>
+                <div style={{ fontSize: "0.8rem", color: "var(--ma-muted2)", marginBottom: 6 }}>{loc.dc}</div>
+                <div className="badge-blue" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <Icon name="Wifi" size={10} />
+                  {loc.ping}
                 </div>
               </div>
             ))}
@@ -358,84 +397,132 @@ export default function Index() {
         </div>
       </section>
 
-      {/* CTA BANNER */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0" style={{
-          background: "linear-gradient(135deg, rgba(255,106,0,0.1) 0%, transparent 60%)",
-        }} />
-        <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: "var(--neon)" }} />
-        <div className="container mx-auto px-6 relative text-center">
-          <div className="tag-cs inline-block mb-6">Готов играть?</div>
-          <h2 className="font-oswald font-bold uppercase mb-4" style={{
-            fontSize: "clamp(2.5rem, 6vw, 5rem)",
-            color: "var(--cs-text)",
-            letterSpacing: "0.02em",
-            lineHeight: 1.1
-          }}>
-            ЗАПУСТИ СЕРВЕР<br />
-            <span style={{ color: "var(--neon)", textShadow: "0 0 30px rgba(255,106,0,0.4)" }}>ЗА 60 СЕКУНД</span>
+      {/* REVIEWS */}
+      <section id="reviews" className="ma-section" style={{ borderTop: "1px solid var(--ma-border)" }}>
+        <div className="container mx-auto px-4" style={{ maxWidth: 1200 }}>
+          <div style={{ marginBottom: 32 }}>
+            <h2 style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--ma-text)", marginBottom: 8 }}>
+              Отзывы клиентов
+            </h2>
+            <p style={{ color: "var(--ma-muted2)", fontSize: "0.9rem" }}>
+              Реальные отзывы от игроков и организаторов
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {reviews.map((r, i) => (
+              <div key={i} className="review-card flex flex-col gap-4">
+                {/* Stars */}
+                <div style={{ display: "flex", gap: 2 }}>
+                  {Array.from({ length: r.rating }).map((_, j) => (
+                    <Icon key={j} name="Star" size={14} style={{ color: "var(--ma-accent)", fill: "var(--ma-accent)" }} />
+                  ))}
+                </div>
+                <p style={{ fontSize: "0.875rem", color: "var(--ma-muted2)", lineHeight: 1.65, flex: 1 }}>
+                  {r.text}
+                </p>
+                <div className="ma-divider" />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: "0.875rem", color: "var(--ma-text)" }}>{r.name}</div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--ma-muted)" }}>{r.role}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div className="badge-blue" style={{ display: "inline-block", marginBottom: 3 }}>{r.server}</div>
+                    <div style={{ fontSize: "0.7rem", color: "var(--ma-muted)" }}>{r.date}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section style={{
+        borderTop: "1px solid var(--ma-border)",
+        background: "var(--ma-surface)",
+        padding: "56px 0"
+      }}>
+        <div className="container mx-auto px-4 text-center" style={{ maxWidth: 600 }}>
+          <h2 style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--ma-text)", marginBottom: 12 }}>
+            Готов запустить сервер?
           </h2>
-          <p className="font-rajdhani text-lg mb-10" style={{ color: "var(--cs-muted)" }}>
-            Первые 3 дня бесплатно. Кредитная карта не нужна.
+          <p style={{ color: "var(--ma-muted2)", marginBottom: 28, lineHeight: 1.7 }}>
+            Первые 3 дня бесплатно. Настройка за 60 секунд. Отмена в любой момент.
           </p>
-          <button className="btn-neon px-12 py-5 text-lg cursor-pointer">
-            Попробовать бесплатно
-          </button>
+          <div className="flex justify-center gap-3 flex-wrap">
+            <button className="btn-ma" style={{ padding: "13px 32px", fontSize: "0.95rem" }}>
+              Создать сервер бесплатно
+            </button>
+            <button className="btn-ma-outline">
+              Посмотреть тарифы
+            </button>
+          </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer style={{ background: "var(--cs-surface)", borderTop: "1px solid rgba(255,106,0,0.1)" }}>
-        <div className="container mx-auto px-6 py-12">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-10 mb-10">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 rounded-full" style={{ background: "var(--neon)" }} />
-                <span className="font-oswald text-xl font-bold tracking-widest">
-                  FRAG<span style={{ color: "var(--neon)" }}>HOST</span>
+      <footer style={{ background: "var(--ma-bg)", borderTop: "1px solid var(--ma-border)", padding: "40px 0" }}>
+        <div className="container mx-auto px-4" style={{ maxWidth: 1200 }}>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8" style={{ marginBottom: 36 }}>
+            {/* Brand */}
+            <div className="col-span-2 md:col-span-2">
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 6, background: "var(--ma-blue)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon name="Server" size={14} style={{ color: "#fff" }} />
+                </div>
+                <span style={{ fontWeight: 700, color: "var(--ma-text)" }}>
+                  FRAG<span style={{ color: "var(--ma-blue-light)" }}>HOST</span>
                 </span>
               </div>
-              <p className="font-rajdhani text-sm max-w-xs" style={{ color: "var(--cs-muted)" }}>
-                Профессиональный хостинг игровых серверов для Counter-Strike с 2019 года.
+              <p style={{ fontSize: "0.82rem", color: "var(--ma-muted)", lineHeight: 1.65, maxWidth: 260 }}>
+                Профессиональный хостинг игровых серверов Counter-Strike. Работаем с 2019 года.
               </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14 }}>
+                <div className="dot-online" />
+                <span style={{ fontSize: "0.75rem", color: "var(--ma-muted2)" }}>Все системы в норме</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
-              {[
-                { title: "Продукт", links: ["Тарифы", "Локации", "SLA", "API"] },
-                { title: "Поддержка", links: ["База знаний", "Discord", "Тикеты", "Статус"] },
-                { title: "Компания", links: ["О нас", "Блог", "Партнёрам", "Контакты"] },
-              ].map((col) => (
-                <div key={col.title}>
-                  <div className="font-oswald text-xs uppercase tracking-widest mb-4" style={{ color: "var(--neon)" }}>
-                    {col.title}
-                  </div>
-                  <ul className="space-y-2">
-                    {col.links.map((l) => (
-                      <li key={l}>
-                        <a href="#" className="font-rajdhani text-sm transition-colors hover:text-orange-400"
-                          style={{ color: "var(--cs-muted)" }}>
-                          {l}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
+            {[
+              { title: "Продукт", links: ["Тарифы", "Локации", "Панель управления", "API"] },
+              { title: "Помощь", links: ["База знаний", "Документация", "Тикеты", "Discord"] },
+              { title: "Компания", links: ["О нас", "Блог", "Партнёрам", "Контакты"] },
+            ].map(col => (
+              <div key={col.title}>
+                <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--ma-muted2)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                  {col.title}
                 </div>
-              ))}
-            </div>
+                <ul style={{ listStyle: "none", padding: 0 }}>
+                  {col.links.map(l => (
+                    <li key={l} style={{ marginBottom: 8 }}>
+                      <a href="#" style={{ fontSize: "0.82rem", color: "var(--ma-muted)", textDecoration: "none", transition: "color 0.15s" }}
+                        onMouseEnter={e => (e.currentTarget.style.color = "var(--ma-text)")}
+                        onMouseLeave={e => (e.currentTarget.style.color = "var(--ma-muted)")}>
+                        {l}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
 
-          <div className="section-divider mb-6" />
+          <div className="ma-divider" style={{ marginBottom: 20 }} />
 
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="font-mono-cs text-xs" style={{ color: "var(--cs-muted)" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <p style={{ fontSize: "0.78rem", color: "var(--ma-muted)" }}>
               © 2024 FRAGHOST. Все права защищены.
             </p>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#4ADE80" }} />
-              <span className="font-mono-cs text-xs" style={{ color: "var(--cs-muted)" }}>
-                Все системы работают нормально
-              </span>
+            <div style={{ display: "flex", gap: 16 }}>
+              {["Политика конфиденциальности", "Оферта", "Cookies"].map(l => (
+                <a key={l} href="#" style={{ fontSize: "0.78rem", color: "var(--ma-muted)", textDecoration: "none" }}
+                  onMouseEnter={e => (e.currentTarget.style.color = "var(--ma-muted2)")}
+                  onMouseLeave={e => (e.currentTarget.style.color = "var(--ma-muted)")}>
+                  {l}
+                </a>
+              ))}
             </div>
           </div>
         </div>

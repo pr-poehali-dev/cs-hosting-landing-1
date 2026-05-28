@@ -94,9 +94,8 @@ export default {
 				'ping-slow': 'ping-slow 2s ease-out infinite',
 			},
 			fontFamily: {
-				oswald: ['Oswald', 'sans-serif'],
-				rajdhani: ['Rajdhani', 'sans-serif'],
-				'mono-cs': ['IBM Plex Mono', 'monospace'],
+				inter: ['Inter', 'sans-serif'],
+				roboto: ['Roboto', 'sans-serif'],
 			},
 			keyframes: {
 				'fade-in-up': {
